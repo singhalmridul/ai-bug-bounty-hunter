@@ -19,9 +19,10 @@ const connection = {
     host: process.env.REDIS_HOST || 'localhost',
     port: 6379,
 };
+console.log('[DEBUG] Connecting to Redis...', connection);
 
 const crawlerWorker = new Worker('crawler-queue', async (job: any) => {
-    logger.info(`Starting crawl job ${job.id}`);
+    console.log(`[WORKER] Received job ${job.id}`);
     const { scanId, config, url } = job.data;
 
     // Check cancellation signal from Redis
@@ -33,7 +34,7 @@ const crawlerWorker = new Worker('crawler-queue', async (job: any) => {
     redisClient.disconnect();
 
     if (shouldStop) {
-        logger.info(`Scan ${scanId} was cancelled by user. Aborting job.`);
+        console.log(`Scan ${scanId} was cancelled by user. Aborting job.`);
         return { status: 'cancelled' };
     }
 
@@ -47,6 +48,22 @@ const crawlerWorker = new Worker('crawler-queue', async (job: any) => {
 
     return crawlerEngine.processUrl(effectiveConfig, scanId);
 }, { connection });
+
+crawlerWorker.on('ready', () => {
+    console.log('[WORKER] Worker is ready and connected to Redis');
+});
+
+crawlerWorker.on('error', (err) => {
+    console.error('[WORKER] Worker error', err);
+});
+
+crawlerWorker.on('active', (job) => {
+    console.log(`[WORKER] Job ${job.id} is now active!`);
+});
+
+crawlerWorker.on('failed', (job, err) => {
+    console.error(`[WORKER] Job ${job?.id} failed:`, err);
+});
 
 const exploitWorker = new Worker('exploit-queue', async (job: any) => {
     logger.info(`Starting exploit job ${job.id}`);

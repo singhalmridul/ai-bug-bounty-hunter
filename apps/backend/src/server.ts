@@ -102,6 +102,10 @@ server.get('/health', async (request, reply) => {
     return { status: 'ok', app: SharedConstants.APP_NAME };
 });
 
+server.get('/', async (request, reply) => {
+    return { message: 'AI Bug Bounty Hunter API is running', documentation: '/documentation' };
+});
+
 server.register(async (instance) => {
     instance.post('/scans', {
         onRequest: [instance.authenticate]

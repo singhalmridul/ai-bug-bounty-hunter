@@ -59,6 +59,7 @@ AI Bug Bounty Hunter is a next-generation security tool that uses Large Language
 4.  **Start Services**
     ```bash
     npm install
+    npx playwright install
     npm run dev
     ```
 

@@ -6,7 +6,7 @@ import pino from 'pino';
 import OpenAI from 'openai';
 import { v4 as uuidv4 } from 'uuid';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// OpenAI initialized lazily
 
 const logger = pino({ level: 'info' });
 
@@ -34,7 +34,7 @@ export class CrawlerEngine {
             logger.info(`Crawling ${config.url} for Scan ${scanId}`);
 
             // Navigate
-            await page.goto(config.url, { waitUntil: 'networkidle', timeout: 30000 });
+            await page.goto(config.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
             const title = await page.title();
             const content = await page.content();
 
@@ -63,6 +63,7 @@ export class CrawlerEngine {
                     logger.info(`[AI ANALYSIS] Generated Prompt for ${templateType} on ${config.url}`);
 
                     try {
+                        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
                         const completion = await openai.chat.completions.create({
                             model: 'gpt-4-1106-preview',
                             messages: [
