@@ -1,0 +1,24 @@
+{
+    "name": "ai-bug-bounty-hunter",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+        "dev": "npm run dev --workspaces",
+        "build": "npm run build --workspaces",
+        "lint": "npm run lint --workspaces",
+        "test": "npm run test --workspaces"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0"
+    },
+    "workspaces": [
+        "apps/*",
+        "services/*",
+        "packages/*"
+    ],
+    "engines": {
+        "node": ">=18"
+    }
+}

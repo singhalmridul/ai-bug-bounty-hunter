@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ai-bug-bounty-hunter
+description: A Helm chart for AI Bug Bounty Hunter
+type: application
+version: 0.1.0
+appVersion: "1.16.0"

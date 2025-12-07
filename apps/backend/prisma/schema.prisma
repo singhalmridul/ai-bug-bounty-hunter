@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  scans     Scan[]
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  name           String?
+  role           String       @default("READ_ONLY") // ADMIN, SECOPS, DEVELOPER, READ_ONLY
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Scan {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  targetUrl      String
+  status         String       @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  attackType     String       @default("all")
+  maxDepth       Int          @default(2)
+  findings       Finding[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Finding {
+  id          String   @id @default(uuid())
+  scanId      String
+  scan        Scan     @relation(fields: [scanId], references: [id])
+  title       String
+  severity    String // LOW, MEDIUM, HIGH, CRITICAL
+  description String
+  pocData     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
