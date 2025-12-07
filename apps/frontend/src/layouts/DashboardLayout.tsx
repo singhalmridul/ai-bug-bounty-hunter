@@ -1,9 +1,17 @@
 import React from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Activity, Settings, Bug, ShieldAlert } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export default function DashboardLayout() {
+    const navigate = useNavigate();
+
+    React.useEffect(() => {
+        if (!localStorage.getItem('token')) {
+            navigate('/login');
+        }
+    }, [navigate]);
+
     return (
         <div className="flex h-screen bg-background text-foreground">
             {/* Sidebar */}

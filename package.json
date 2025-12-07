@@ -3,15 +3,16 @@
     "version": "0.0.1",
     "private": true,
     "scripts": {
-        "dev": "npm run dev --workspaces",
+        "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\" \"npm run dev -w crawler-service\"",
         "build": "npm run build --workspaces",
         "lint": "npm run lint --workspaces",
         "test": "npm run test --workspaces"
     },
     "devDependencies": {
-        "typescript": "^5.0.0",
+        "concurrently": "^9.2.1",
         "eslint": "^8.0.0",
-        "prettier": "^3.0.0"
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
     },
     "workspaces": [
         "apps/*",

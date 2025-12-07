@@ -75,8 +75,8 @@ const ScansPage: React.FC = () => {
                                     <td className="p-4">
                                         <div className="flex items-center gap-2">
                                             <span className={`px-2 py-1 rounded text-xs ${scan.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                                                    scan.status === 'FAILED' ? 'bg-red-100 text-red-800' :
-                                                        'bg-blue-100 text-blue-800'
+                                                scan.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                                                    'bg-blue-100 text-blue-800'
                                                 }`}>
                                                 {scan.status}
                                             </span>
@@ -93,6 +93,30 @@ const ScansPage: React.FC = () => {
                                                     className="px-2 py-1 text-xs border border-red-200 text-red-600 rounded hover:bg-red-50"
                                                 >
                                                     Stop
+                                                </button>
+                                            ) : scan.status === 'COMPLETED' ? (
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            const token = localStorage.getItem('token');
+                                                            const res = await fetch(`http://localhost:3000/scans/${scan.id}/report`, {
+                                                                headers: { 'Authorization': `Bearer ${token}` }
+                                                            });
+                                                            if (res.ok) {
+                                                                const blob = await res.blob();
+                                                                const url = window.URL.createObjectURL(blob);
+                                                                const a = document.createElement('a');
+                                                                a.href = url;
+                                                                a.download = `scan-${scan.id}.pdf`;
+                                                                a.click();
+                                                            }
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                        }
+                                                    }}
+                                                    className="px-2 py-1 text-xs border border-blue-200 text-blue-600 rounded hover:bg-blue-50"
+                                                >
+                                                    Download Report
                                                 </button>
                                             ) : null}
                                         </div>

@@ -7,6 +7,9 @@ import sensible from '@fastify/sensible';
 import { SharedConstants } from '@bugbounty/shared';
 import { prisma, neo4jDriver, redis } from './config/db';
 import { addCrawlJob } from './services/queue';
+import { ReportService } from './services/report/pdfGenerator';
+
+const reportService = new ReportService();
 
 const server: FastifyInstance = Fastify({
     logger: {
@@ -34,21 +37,45 @@ server.register(tenantMiddleware);
 server.register(sensible);
 
 // Auth Routes (Public)
+// Auth Routes (Public)
+import { AuthService } from './services/auth.service';
+const authService = new AuthService();
+
+server.post('/auth/register', async (request, reply) => {
+    const { email, password, name } = request.body as any;
+    if (!email || !password) return reply.code(400).send({ error: 'Missing credentials' });
+
+    try {
+        const user = await authService.register(email, password, name);
+        const token = server.jwt.sign({
+            id: user.id,
+            email: user.email,
+            organizationId: user.organizationId,
+            role: user.role
+        });
+        return { token, user };
+    } catch (err: any) {
+        request.log.error(err);
+        return reply.code(400).send({ error: err.message });
+    }
+});
+
 server.post('/auth/login', async (request, reply) => {
-    // Mock login for MVP
-    // In production, verify credentials/SSO token here
-    const { email } = request.body as { email: string } || { email: 'demo@bugbounty.ai' };
+    const { email, password } = request.body as any;
 
-    // Create or get user (Mock logic)
-    const userPayload = {
-        id: 'user-ss-1',
-        email,
-        organizationId: 'org-demo-1',
-        role: 'ADMIN'
-    };
+    const user = await authService.validateUser(email, password);
+    if (!user) {
+        return reply.code(401).send({ error: 'Invalid credentials' });
+    }
 
-    const token = server.jwt.sign(userPayload);
-    return { token };
+    const token = server.jwt.sign({
+        id: user.id,
+        email: user.email,
+        organizationId: user.organizationId,
+        role: user.role
+    });
+
+    return { token, user };
 });
 
 
@@ -196,7 +223,9 @@ server.register(async (instance) => {
                 where: { id },
                 data: { status: 'FAILED' } // Using FAILED to indicate stopped/cancelled for MVP
             });
-            // In a real app we'd also signal the crawler queue/worker to abort
+            // Signal Crawler to stop
+            await redis.set(`scan:stop:${id}`, 'true', 'EX', 3600); // 1 hour TTL
+
             return { status: 'stopped' };
         } catch (err) {
             request.log.error(err);
@@ -209,19 +238,35 @@ server.register(async (instance) => {
     }, async (request, reply) => {
         const { id } = request.params as { id: string };
 
-        // Mock findings data for now
-        const mockFindings = [
-            { title: 'Reflected XSS', severity: 'High', url: 'http://example.com?q=<script>', description: 'Input reflected in DOM' },
-            { title: 'SQL Injection', severity: 'Critical', url: 'http://example.com/api', description: 'Blind SQLi in id param' }
-        ];
-
         try {
-            // Need to import ReportService, for now mock response
-            // const buffer = await reportService.generateScanReport(id, mockFindings);
-            // reply.header('Content-Type', 'application/pdf');
-            // reply.header('Content-Disposition', `attachment; filename="scan-${id}.pdf"`);
-            // return reply.send(buffer);
-            return { status: 'Report generation temporarily disabled for refactor' };
+            // Fetch findings from Neo4j
+            const session = neo4jDriver.session();
+            let findings: any[] = [];
+            try {
+                const res = await session.run(`
+                    MATCH (s:Scan {id: $id})-[:FOUND]->(f:Finding)
+                    RETURN f
+                `, { id });
+
+                findings = res.records.map(record => {
+                    const f = record.get('f').properties;
+                    return {
+                        title: f.type || 'Vulnerability', // Fallback
+                        severity: f.severity,
+                        url: f.url, // Finding URL usually stored on the finding node itself or inferred
+                        description: f.description
+                    };
+                });
+            } finally {
+                await session.close();
+            }
+
+            const buffer = await reportService.generateScanReport(id, findings);
+
+            reply.header('Content-Type', 'application/pdf');
+            reply.header('Content-Disposition', `attachment; filename="scan-${id}.pdf"`);
+            return reply.send(buffer);
+
         } catch (err) {
             request.log.error(err);
             return reply.code(500).send({ error: 'Failed to generate report' });

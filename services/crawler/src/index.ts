@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
 import { Worker } from 'bullmq';
 import { initNeo4j } from './db/neo4j';
 import { CrawlerEngine } from './engine/crawler';
@@ -21,6 +23,19 @@ const connection = {
 const crawlerWorker = new Worker('crawler-queue', async (job: any) => {
     logger.info(`Starting crawl job ${job.id}`);
     const { scanId, config, url } = job.data;
+
+    // Check cancellation signal from Redis
+    const Redis = require('ioredis');
+    const redisClient = new Redis(connection);
+
+    const stopKey = `scan:stop:${scanId}`;
+    const shouldStop = await redisClient.get(stopKey);
+    redisClient.disconnect();
+
+    if (shouldStop) {
+        logger.info(`Scan ${scanId} was cancelled by user. Aborting job.`);
+        return { status: 'cancelled' };
+    }
 
     // Support both new config-based jobs and legacy url-based jobs
     const effectiveConfig = config || {

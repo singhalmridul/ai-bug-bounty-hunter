@@ -5,6 +5,12 @@ import { Shield, Zap, Search, Lock } from 'lucide-react';
 const LandingPage: React.FC = () => {
     const navigate = useNavigate();
 
+    React.useEffect(() => {
+        if (localStorage.getItem('token')) {
+            navigate('/dashboard');
+        }
+    }, [navigate]);
+
     return (
         <div className="min-h-screen bg-black text-white selection:bg-blue-500/30">
             {/* Navbar */}
