@@ -7,23 +7,29 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import ScansPage from './pages/scans/ScansPage';
 import FindingsPage from './pages/findings/FindingsPage';
 import SettingsPage from './pages/settings/SettingsPage';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 const AppRouter: React.FC = () => {
     return (
         <BrowserRouter>
-            <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<LoginPage />} />
+            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+                <AuthProvider>
+                    <Routes>
+                        {/* Public Routes */}
+                        <Route path="/" element={<LandingPage />} />
+                        <Route path="/login" element={<LoginPage />} />
 
-                {/* Protected Dashboard Routes */}
-                <Route path="/" element={<DashboardLayout />}>
-                    <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="scans" element={<ScansPage />} />
-                    <Route path="findings" element={<FindingsPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                </Route>
-            </Routes>
+                        {/* Protected Dashboard Routes */}
+                        <Route path="/" element={<DashboardLayout />}>
+                            <Route path="dashboard" element={<DashboardPage />} />
+                            <Route path="scans" element={<ScansPage />} />
+                            <Route path="findings" element={<FindingsPage />} />
+                            <Route path="settings" element={<SettingsPage />} />
+                        </Route>
+                    </Routes>
+                </AuthProvider>
+            </ThemeProvider>
         </BrowserRouter>
     );
 };
