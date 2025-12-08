@@ -20,25 +20,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        // Hydrate from local storage on mount
-        const storedToken = localStorage.getItem('token');
+    const [user, setUser] = useState<User | null>(() => {
         const storedUser = localStorage.getItem('user');
-
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("Failed to parse user", e);
-                localStorage.removeItem('user');
-            }
+        try {
+            return storedUser ? JSON.parse(storedUser) : null;
+        } catch (e) {
+            console.error("Failed to parse user", e);
+            return null;
         }
-    }, []);
+    });
+    const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+    const navigate = useNavigate();
 
     const login = (newToken: string, newUser: User) => {
         setToken(newToken);
